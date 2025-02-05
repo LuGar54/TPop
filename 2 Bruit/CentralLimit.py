@@ -48,15 +48,15 @@ for j in num:
     means.append(x)
 k = 0
 
-print(np.mean(means[0])-min(means[0]))
-print(-np.mean(means[0])+max(means[0]))
+# print(np.mean(means[0])-min(means[0]))
+# print(-np.mean(means[0])+max(means[0]))
 
 bins = np.histogram(np.hstack((means[0], means[3])), bins=50)[1]
 plt.subplot(2, 1, 1)
-plt.hist(means[3], bins, alpha=0.25, label=f"{num[3]}", edgecolor='black')
-plt.hist(means[2], bins, alpha=0.25, label=f"{num[2]}", edgecolor='black')
-plt.hist(means[1], bins, alpha=0.25, label=f"{num[1]}", edgecolor='black')
-plt.hist(means[0], bins, alpha=0.25, label=f"{num[0]}", edgecolor='black')
+plt.hist(means[3], bins, alpha=0.25, label=f"{num[3]}", edgecolor='black', hatch='/')
+plt.hist(means[2], bins, alpha=0.25, label=f"{num[2]}", edgecolor='black', hatch='++')
+plt.hist(means[1], bins, alpha=0.25, label=f"{num[1]}", edgecolor='black', hatch='\\')
+plt.hist(means[0], bins, alpha=0.25, label=f"{num[0]}", edgecolor='black', hatch='xxx')
 plt.legend()
 
 plt.xlabel("Moyenne du signal [V]")
