@@ -70,6 +70,8 @@ for file_to_compare, peak_height in files_to_compare:
     # print(x[518])
 
     # print(old_max)
+    o_max = max(y)
+    # print('peak', file_to_compare, peak_height/o_max * 100)
     normalized_y = normalize([y], norm='max')
     # plt.plot(x, normalized_y[1])
     # plt.show()
@@ -82,7 +84,7 @@ for file_to_compare, peak_height in files_to_compare:
 
     filtered = savgol_filter(y, 10, 3)
     noise = np.mean(abs(y - filtered))
-    
+    # print('bruit', noise/o_max * 100)
     # print(noise)
     
     normalized_y = savgol_filter(normalized_y[0], 10, 3)
@@ -124,12 +126,14 @@ for file_to_compare, peak_height in files_to_compare:
             prominences_up_noise.append(peak_height+noise)
             if '100_' in file_to_compare or '_0_' in file_to_compare:
                 plt.plot(x, normalized_y)
+            
                 
         else:
             # plt.vlines(x[peaks[0]], y[peaks[0]] - peak_height/old_max, y[peaks[0]], color="gray", linestyle="dashed")
             # plt.plot(x, normalized_y)
             alcools.append(peak_height)
-            print(file_to_compare + ' ' + str(noise/peak_height))
+            # print(file_to_compare + ' ' + str(noise))
+            
             alcools_down_noise.append(peak_height-noise)
             alcools_up_noise.append(peak_height+noise)
         
@@ -168,10 +172,13 @@ y_up_noise = prominences_up_noise
 # print(y_down_noise)
 # print(y_up_noise)
 
+# print(prominences)
+
 param, param_cov = curve_fit(test_fitting, x, y)
 param_down, param_cov_down = curve_fit(test_fitting, x, y_down_noise)
 param_up, param_cov_up = curve_fit(test_fitting, x, y_up_noise)
-# print(param)
+perr = np.sqrt(np.diag(param_cov))/y[0]
+print('perr', perr)
 ans = []
 ans_down = []
 ans_up = []
@@ -257,7 +264,7 @@ plt.plot([gin_bottom_left_percent, gin_bottom_right_percent], [alcools_down_nois
 # plt.axis([35, 45, 0.45, 0.7])
 
 plt.legend(['Whisky', 'Gin', 'Vodka'], fontsize=15)
-plt.xlabel('Pourcentage (%)', fontsize=15)
+plt.xlabel("Pourcentage d'éthanol (%)", fontsize=15)
 plt.ylabel('Intensité (relative)', fontsize=15)
 plt.title("Intensité du spectre Raman selon le taux d'éthanol", fontsize=15)
 
@@ -288,7 +295,20 @@ axins.plot([vodka_bottom_left_percent, vodka_bottom_right_percent], [alcools_dow
 axins.plot([gin_top_left_percent, gin_top_right_percent], [alcools_up_noise[0], alcools_up_noise[0]], color='black', label=None)
 axins.plot([gin_bottom_left_percent, gin_bottom_right_percent], [alcools_down_noise[0], alcools_down_noise[0]], color='black', label=None)
 
+# axins.plot(gin_bottom_left_percent, alcools_down_noise[0], '.b')
+# axins.plot(gin_bottom_right_percent, alcools_down_noise[0], '.b')
+# axins.plot(gin_top_right_percent, alcools_up_noise[0], '.b')
+# axins.plot(gin_top_left_percent, alcools_up_noise[0], '.b')
 
+# axins.plot(vodka_bottom_left_percent, alcools_down_noise[1], '.r')
+# axins.plot(vodka_bottom_right_percent, alcools_down_noise[1], '.r')
+# axins.plot(vodka_top_left_percent, alcools_up_noise[1], '.r')
+# axins.plot(vodka_top_right_percent, alcools_up_noise[1], '.r')
+
+# axins.plot(whisky_bottom_left_percent, alcools_down_noise[2], '.g')
+# axins.plot(whisky_bottom_right_percent, alcools_down_noise[2], '.g')
+# axins.plot(whisky_top_left_percent, alcools_up_noise[2], '.g')
+# axins.plot(whisky_top_right_percent, alcools_up_noise[2], '.g')
 
 axins.set_xlim(33, 47)
 axins.set_ylim(0.5, 0.65)
