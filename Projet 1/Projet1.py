@@ -14,7 +14,11 @@ DIFF_BETWEEN_PLATEAUS = 150
 def open_file(file_to_compare):
     x = []
     y = []
-    with open('./DataRamanCM/' + file_to_compare, 'r') as data:
+    folder = './Data2CM/'
+    if '11_03' in file_to_compare:
+        folder = './DataRamanCM/'
+        
+    with open(folder + file_to_compare, 'r') as data:
         for line in data:
             p = line.split()
             currentPixel = float(p[0])
@@ -43,6 +47,11 @@ def find_plateau(points, peak_index, peak_y):
 x_ref, y_ref = open_file('11_03_ethanol_100_Reference_100sec_aligned_1.txt')
 
 files_to_compare = [
+    # ('15_04_ethanol_100_300sec_1.txt', 5110),
+    # ('15_04_ethanol_80_300sec_1.txt', 5007),
+    # ('15_04_ethanol_60_300sec_1.txt', 4099),
+    # ('15_04_ethanol_40_300sec_1.txt', 2955),
+    # ('15_04_ethanol_20_300sec_1.txt', 1532),
     ('11_03_ethanol_100_Reference_100sec_aligned_1.txt', 5110),
     ('11_03_ethanol_80_Reference_100sec_1.txt', 5007),
     ('11_03_ethanol_60_Reference_100sec_1.txt', 4099),
@@ -72,7 +81,7 @@ for file_to_compare, peak_height in files_to_compare:
     # print(old_max)
     o_max = max(y)
     # print('peak', file_to_compare, peak_height/o_max * 100)
-    normalized_y = normalize([y], norm='max')
+    normalized_y = normalize([y], norm='max')[0]
     # plt.plot(x, normalized_y[1])
     # plt.show()
 
@@ -80,14 +89,28 @@ for file_to_compare, peak_height in files_to_compare:
 
     # print('substracted dif : ' + file_to_compare + ' : ' + str(y[143]))
 
+    # plt.plot(x, y)
+    # plt.show()
     # plt.plot(x[143], y[143], "xg")
 
-    filtered = savgol_filter(y, 10, 3)
-    noise = np.mean(abs(y - filtered))
+    # filtered = savgol_filter(y, 10, 3)
+    # snr = np.mean(normalized_y)/np.std(normalized_y)
+    # print(snr)
+    # noise = np.mean(abs(y - filtered))
+    # index_1800 = x.index(1801.364)
+    # print(index_1800)
+    # index_1900 = x.index(1899.211)
+    # print(index_1900)
+    # plt.plot(x, normalized_y)
+    # plt.show()
+    noise = np.std(normalized_y[22:46])
+    if '_0_' not in file_to_compare:
+        print('noise', file_to_compare, noise/peak_height * 100)
+    # noise = TODO
     # print('bruit', noise/o_max * 100)
     # print(noise)
     
-    normalized_y = savgol_filter(normalized_y[0], 10, 3)
+    # normalized_y = savgol_filter(normalized_y[0], 10, 3)
 
     peaks_x = []
     peaks_y = []
@@ -156,12 +179,15 @@ plt.gca().invert_xaxis()
 plt.savefig("waterEthanol.pdf")
 plt.show()
 
-def test_fitting(x, a, b, c):
-    return a * x**2 + b * x + c
+# def test_fitting(x, a, b, c):
+#     return a * x**2 + b * x + c
+
+def test_linear_fitting(x, a, b):
+    return a * x + b
     
     
-def invert_fitting(x, a, b, c):
-    return (-b + np.sqrt(b**2 - 4 * a * (c - x)))/ (2 * a)
+# def invert_fitting(x, a, b, c):
+#     return (-b + np.sqrt(b**2 - 4 * a * (c - x)))/ (2 * a)
     
 
 x = [100.0, 80.0, 60.0, 40.0, 20.0, 0.0]
@@ -174,9 +200,14 @@ y_up_noise = prominences_up_noise
 
 # print(prominences)
 
-param, param_cov = curve_fit(test_fitting, x, y)
-param_down, param_cov_down = curve_fit(test_fitting, x, y_down_noise)
-param_up, param_cov_up = curve_fit(test_fitting, x, y_up_noise)
+param, param_cov = curve_fit(test_linear_fitting, x, y)
+# param_down, param_cov_down = curve_fit(test_linear_fitting, x, y_down_noise)
+# param_up, param_cov_up = curve_fit(test_linear_fitting, x, y_up_noise)
+print(param)
+param_up = [param[0], 4099-(param[0]*60)]
+print('comp ', param[1], param_up[1])
+
+param_down = [param[0], 5110-(param[0]*100)]
 perr = np.sqrt(np.diag(param_cov))/y[0]
 print('perr', perr)
 ans = []
@@ -185,29 +216,32 @@ ans_up = []
 linear = np.linspace(0, 100)
 
 for i in linear:
-    ans.append(test_fitting(i, param[0], param[1], param[2]))
-    ans_down.append(test_fitting(i, param_down[0], param_down[1], param_down[2]))
-    ans_up.append(test_fitting(i, param_up[0], param_up[1], param_up[2]))
+    ans.append(test_linear_fitting(i, param[0], param[1]))
+    ans_down.append(test_linear_fitting(i, param[0], param_down[1]))
+    ans_up.append(test_linear_fitting(i, param_up[0], param_up[1]))
 
 
-gin_bottom_left_percent = invert_fitting(alcools_down_noise[0], param_down[0], param_down[1], param_down[2])
-gin_bottom_right_percent = invert_fitting(alcools_down_noise[0], param_up[0], param_up[1], param_up[2])
-gin_top_right_percent = invert_fitting(alcools_up_noise[0], param_up[0], param_up[1], param_up[2])
-gin_top_left_percent = invert_fitting(alcools_up_noise[0], param_down[0], param_down[1], param_down[2])
+# gin_bottom_left_percent = invert_fitting(alcools_down_noise[0], param_down[0], param_down[1], param_down[2])
+# gin_bottom_right_percent = invert_fitting(alcools_down_noise[0], param_up[0], param_up[1], param_up[2])
+# gin_top_right_percent = invert_fitting(alcools_up_noise[0], param_up[0], param_up[1], param_up[2])
+# gin_top_left_percent = invert_fitting(alcools_up_noise[0], param_down[0], param_down[1], param_down[2])
 
-vodka_bottom_left_percent = invert_fitting(alcools_down_noise[1], param_down[0], param_down[1], param_down[2])
-vodka_bottom_right_percent = invert_fitting(alcools_down_noise[1], param_up[0], param_up[1], param_up[2])
-vodka_top_right_percent = invert_fitting(alcools_up_noise[1], param_up[0], param_up[1], param_up[2])
-vodka_top_left_percent = invert_fitting(alcools_up_noise[1], param_down[0], param_down[1], param_down[2])
+# vodka_bottom_left_percent = invert_fitting(alcools_down_noise[1], param_down[0], param_down[1], param_down[2])
+# vodka_bottom_right_percent = invert_fitting(alcools_down_noise[1], param_up[0], param_up[1], param_up[2])
+# vodka_top_right_percent = invert_fitting(alcools_up_noise[1], param_up[0], param_up[1], param_up[2])
+# vodka_top_left_percent = invert_fitting(alcools_up_noise[1], param_down[0], param_down[1], param_down[2])
 
-whisky_bottom_left_percent = invert_fitting(alcools_down_noise[2], param_down[0], param_down[1], param_down[2])
-whisky_bottom_right_percent = invert_fitting(alcools_down_noise[2], param_up[0], param_up[1], param_up[2])
-whisky_top_right_percent = invert_fitting(alcools_up_noise[2], param_up[0], param_up[1], param_up[2])
-whisky_top_left_percent = invert_fitting(alcools_up_noise[2], param_down[0], param_down[1], param_down[2])
+# whisky_bottom_left_percent = invert_fitting(alcools_down_noise[2], param_down[0], param_down[1], param_down[2])
+# whisky_bottom_right_percent = invert_fitting(alcools_down_noise[2], param_up[0], param_up[1], param_up[2])
+# whisky_top_right_percent = invert_fitting(alcools_up_noise[2], param_up[0], param_up[1], param_up[2])
+# whisky_top_left_percent = invert_fitting(alcools_up_noise[2], param_down[0], param_down[1], param_down[2])
 
-gin_percent = (-param[1] + np.sqrt(param[1]**2 - 4 * param[0] * (param[2] - alcools[0])))/ (2 * param[0])
-vodka_percent = (-param[1] + np.sqrt(param[1]**2 - 4 * param[0] * (param[2] - alcools[1])))/ (2 * param[0])
-whisky_percent = (-param[1] + np.sqrt(param[1]**2 - 4 * param[0] * (param[2] - alcools[2])))/ (2 * param[0])
+# gin_percent = (-param[1] + np.sqrt(param[1]**2 - 4 * param[0] * (param[2] - alcools[0])))/ (2 * param[0])
+# vodka_percent = (-param[1] + np.sqrt(param[1]**2 - 4 * param[0] * (param[2] - alcools[1])))/ (2 * param[0])
+# whisky_percent = (-param[1] + np.sqrt(param[1]**2 - 4 * param[0] * (param[2] - alcools[2])))/ (2 * param[0])
+gin_percent = (alcools[0] - param[1]) / param[0]
+vodka_percent = (alcools[1] - param[1]) / param[0]
+whisky_percent = (alcools[2] - param[1]) / param[0]
 
 print('gin : ', gin_percent)
 print('vodka : ', vodka_percent)
@@ -215,13 +249,15 @@ print('whisky : ', whisky_percent)
 
 fig, ax = plt.subplots()
 
-ans_max = max(ans_up)
+plt.scatter(x, np.divide(y, max(y)), label='Éthanol')
 
-ans_up = ans_up/ans_max
-ans_down = ans_down/ans_max
-ans = ans/ans_max
-alcools_down_noise = alcools_down_noise/ans_max
-alcools_up_noise = alcools_up_noise/ans_max
+ans_max = 5110
+
+ans_up = np.divide(ans_up, ans_max)
+ans_down = np.divide(ans_down, ans_max)
+ans = np.divide(ans, ans_max)
+# alcools_down_noise = alcools_down_noise/ans_max
+# alcools_up_noise = alcools_up_noise/ans_max
 
 # print(alcools)
 # plt.plot(x, y, color='gray')
@@ -233,20 +269,20 @@ plt.plot(linear, ans, label='_nolegend_')
 # plt.plot(gin_top_right_percent, alcools_up_noise[0], 'xb')
 # plt.plot(gin_top_left_percent, alcools_up_noise[0], 'xb')
 
-ax.add_patch(Polygon([(whisky_bottom_left_percent, alcools_down_noise[2]), (whisky_bottom_right_percent, alcools_down_noise[2]), (whisky_top_right_percent, alcools_up_noise[2]), (whisky_top_left_percent, alcools_up_noise[2])],
-                                 hatch='', facecolor=(0,1,0,0.4)))
+# ax.add_patch(Polygon([(whisky_bottom_left_percent, alcools_down_noise[2]), (whisky_bottom_right_percent, alcools_down_noise[2]), (whisky_top_right_percent, alcools_up_noise[2]), (whisky_top_left_percent, alcools_up_noise[2])],
+#                                  hatch='', facecolor=(0,1,0,0.4)))
 
-ax.add_patch(Polygon([(gin_bottom_left_percent, alcools_down_noise[0]), (gin_bottom_right_percent, alcools_down_noise[0]), (gin_top_right_percent, alcools_up_noise[0]), (gin_top_left_percent, alcools_up_noise[0])],
-                                 hatch='/////', facecolor=(0,0,0,0)))
+# ax.add_patch(Polygon([(gin_bottom_left_percent, alcools_down_noise[0]), (gin_bottom_right_percent, alcools_down_noise[0]), (gin_top_right_percent, alcools_up_noise[0]), (gin_top_left_percent, alcools_up_noise[0])],
+#                                  hatch='/////', facecolor=(0,0,0,0)))
 
-ax.add_patch(Polygon([(vodka_bottom_left_percent, alcools_down_noise[1]), (vodka_bottom_right_percent, alcools_down_noise[1]), (vodka_top_right_percent, alcools_up_noise[1]), (vodka_top_left_percent, alcools_up_noise[1])],
-                                 hatch='\\\\', facecolor=(1,1,1,0)))
+# ax.add_patch(Polygon([(vodka_bottom_left_percent, alcools_down_noise[1]), (vodka_bottom_right_percent, alcools_down_noise[1]), (vodka_top_right_percent, alcools_up_noise[1]), (vodka_top_left_percent, alcools_up_noise[1])],
+#                                  hatch='\\\\', facecolor=(1,1,1,0)))
 
-plt.plot([vodka_top_left_percent, vodka_top_right_percent], [alcools_up_noise[1], alcools_up_noise[1]], color='black', label=None)
-plt.plot([vodka_bottom_left_percent, vodka_bottom_right_percent], [alcools_down_noise[1], alcools_down_noise[1]], color='black', label=None)
+# plt.plot([vodka_top_left_percent, vodka_top_right_percent], [alcools_up_noise[1], alcools_up_noise[1]], color='black', label=None)
+# plt.plot([vodka_bottom_left_percent, vodka_bottom_right_percent], [alcools_down_noise[1], alcools_down_noise[1]], color='black', label=None)
 
-plt.plot([gin_top_left_percent, gin_top_right_percent], [alcools_up_noise[0], alcools_up_noise[0]], color='black', label=None)
-plt.plot([gin_bottom_left_percent, gin_bottom_right_percent], [alcools_down_noise[0], alcools_down_noise[0]], color='black', label=None)
+# plt.plot([gin_top_left_percent, gin_top_right_percent], [alcools_up_noise[0], alcools_up_noise[0]], color='black', label=None)
+# plt.plot([gin_bottom_left_percent, gin_bottom_right_percent], [alcools_down_noise[0], alcools_down_noise[0]], color='black', label=None)
 
 # print(gin_percent)
 # print(vodka_percent)
@@ -271,29 +307,29 @@ plt.title("Intensité du spectre Raman selon le taux d'éthanol", fontsize=15)
 plt.gca().invert_xaxis()
 
 
-axins = zoomed_inset_axes(ax, 3, loc=3, borderpad=2)
-# axins = ax.inset_axes(
-#     [0.1, 0.1, 0.3, 0.3],
-#     xlim=(35, 45), ylim=(0.45, 0.7))
+# axins = zoomed_inset_axes(ax, 3, loc=3, borderpad=2)
+# # axins = ax.inset_axes(
+# #     [0.1, 0.1, 0.3, 0.3],
+# #     xlim=(35, 45), ylim=(0.45, 0.7))
 
-axins.plot(linear, ans_down, color='red', linestyle='dashed', label='_nolegend_')
-axins.plot(linear, ans_up, color='green', linestyle='dashed', label='_nolegend_')
-axins.plot(linear, ans, label='_nolegend_', color=(0.12, 0.47, 0.7, 0.5))
+# axins.plot(linear, ans_down, color='red', linestyle='dashed', label='_nolegend_')
+# axins.plot(linear, ans_up, color='green', linestyle='dashed', label='_nolegend_')
+# axins.plot(linear, ans, label='_nolegend_', color=(0.12, 0.47, 0.7, 0.5))
     
-axins.add_patch(Polygon([(whisky_bottom_left_percent, alcools_down_noise[2]), (whisky_bottom_right_percent, alcools_down_noise[2]), (whisky_top_right_percent, alcools_up_noise[2]), (whisky_top_left_percent, alcools_up_noise[2])],
-                                 hatch='', facecolor=(0,1,0,0.4)))
+# axins.add_patch(Polygon([(whisky_bottom_left_percent, alcools_down_noise[2]), (whisky_bottom_right_percent, alcools_down_noise[2]), (whisky_top_right_percent, alcools_up_noise[2]), (whisky_top_left_percent, alcools_up_noise[2])],
+#                                  hatch='', facecolor=(0,1,0,0.4)))
 
-axins.add_patch(Polygon([(gin_bottom_left_percent, alcools_down_noise[0]), (gin_bottom_right_percent, alcools_down_noise[0]), (gin_top_right_percent, alcools_up_noise[0]), (gin_top_left_percent, alcools_up_noise[0])],
-                                 hatch='/////', facecolor=(0,0,0,0)))
+# axins.add_patch(Polygon([(gin_bottom_left_percent, alcools_down_noise[0]), (gin_bottom_right_percent, alcools_down_noise[0]), (gin_top_right_percent, alcools_up_noise[0]), (gin_top_left_percent, alcools_up_noise[0])],
+#                                  hatch='/////', facecolor=(0,0,0,0)))
 
-axins.add_patch(Polygon([(vodka_bottom_left_percent, alcools_down_noise[1]), (vodka_bottom_right_percent, alcools_down_noise[1]), (vodka_top_right_percent, alcools_up_noise[1]), (vodka_top_left_percent, alcools_up_noise[1])],
-                                 hatch='\\\\', facecolor=(1,1,1,0)))
+# axins.add_patch(Polygon([(vodka_bottom_left_percent, alcools_down_noise[1]), (vodka_bottom_right_percent, alcools_down_noise[1]), (vodka_top_right_percent, alcools_up_noise[1]), (vodka_top_left_percent, alcools_up_noise[1])],
+#                                  hatch='\\\\', facecolor=(1,1,1,0)))
 
-axins.plot([vodka_top_left_percent, vodka_top_right_percent], [alcools_up_noise[1], alcools_up_noise[1]], color='black', label=None)
-axins.plot([vodka_bottom_left_percent, vodka_bottom_right_percent], [alcools_down_noise[1], alcools_down_noise[1]], color='black', label=None)
+# axins.plot([vodka_top_left_percent, vodka_top_right_percent], [alcools_up_noise[1], alcools_up_noise[1]], color='black', label=None)
+# axins.plot([vodka_bottom_left_percent, vodka_bottom_right_percent], [alcools_down_noise[1], alcools_down_noise[1]], color='black', label=None)
 
-axins.plot([gin_top_left_percent, gin_top_right_percent], [alcools_up_noise[0], alcools_up_noise[0]], color='black', label=None)
-axins.plot([gin_bottom_left_percent, gin_bottom_right_percent], [alcools_down_noise[0], alcools_down_noise[0]], color='black', label=None)
+# axins.plot([gin_top_left_percent, gin_top_right_percent], [alcools_up_noise[0], alcools_up_noise[0]], color='black', label=None)
+# axins.plot([gin_bottom_left_percent, gin_bottom_right_percent], [alcools_down_noise[0], alcools_down_noise[0]], color='black', label=None)
 
 # axins.plot(gin_bottom_left_percent, alcools_down_noise[0], '.b')
 # axins.plot(gin_bottom_right_percent, alcools_down_noise[0], '.b')
@@ -310,11 +346,11 @@ axins.plot([gin_bottom_left_percent, gin_bottom_right_percent], [alcools_down_no
 # axins.plot(whisky_top_left_percent, alcools_up_noise[2], '.g')
 # axins.plot(whisky_top_right_percent, alcools_up_noise[2], '.g')
 
-axins.set_xlim(33, 47)
-axins.set_ylim(0.5, 0.65)
-axins.set_xticks([])
-axins.set_yticks([])
-mark_inset(ax, axins, loc1=1, loc2=4, fc="none", ec="0.5")
+# axins.set_xlim(33, 47)
+# axins.set_ylim(0.5, 0.65)
+# axins.set_xticks([])
+# axins.set_yticks([])
+# mark_inset(ax, axins, loc1=1, loc2=4, fc="none", ec="0.5")
 
 # axins = ax.inset_axes(
 #     [0.1, 0.1, 0.5, 0.5],
@@ -323,7 +359,7 @@ mark_inset(ax, axins, loc1=1, loc2=4, fc="none", ec="0.5")
 # axins.plot(x,y)
 
 # ax.indicate_inset_zoom(axins, edgecolor="black")
-plt.gca().invert_xaxis()
+# plt.gca().invert_xaxis()
 plt.savefig("percentComparison.pdf")
 
 plt.show()
