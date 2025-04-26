@@ -2,6 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 
+
+# plt.bar([0, 20, 40, 60, 80, 100], [0, 0.2, 0.4, 0.6, 0.8, 1], width=5)
+# plt.xlabel("Pourcentage d'éthanol (%)", fontsize=15)
+# plt.ylabel('Intensité (relative)', fontsize=15)
+# plt.savefig("bar.png")
+# plt.show()
+
 def open_file(file_to_compare):
     x = []
     y = []
@@ -55,22 +62,24 @@ for file_to_compare, concentration in files_to_compare:
     pos_max = np.argmax(y[120:300]) + 120
     # print(pos_max)
     
-    peak_height = (y[pos_max] - ground)* (concentration**0.75)
-    # print(file_to_compare, peak_height)
+    peak_height = (y[pos_max] - ground)* (concentration**0.6)
+    print(file_to_compare, np.std(y[50:90])/peak_height * 100)
     
     if 'et' in file_to_compare:
         heights.append(peak_height)
         concentrations.append(concentration)
     else:
-        substrats.append((peak_height-530, file_to_compare))
+        substrats.append((peak_height-2050, file_to_compare))
         
     # plt.scatter(x[pos_max], y[pos_max], color='red', label='Max Peak')
     # plt.vlines(x[pos_max], ground, y[pos_max], color='green', linestyle='--', label='Peak Height')
 
-    # plt.scatter(x[120], y[120], color='blue', label='Data Points')
+    # plt.scatter(x[90], y[90], color='blue', label='Data Points')
 
-    # plt.plot(x, y)
-    # plt.show()
+    plt.xlabel("Longueur d'onde (cm-1)", fontsize=15)
+    plt.ylabel('Intensité (relative)', fontsize=15)
+    plt.plot(x, y)
+    plt.show()
     
     
 def test_linear_fitting(x, a, b):
@@ -96,11 +105,32 @@ top_diff = max(np.subtract(heights,fits))
 bottom_diff = min(map(lambda h, f: h - f, heights, fits))
 
 for substrat, file_name in substrats:
-    plt.hlines(substrat/maxHeight, 0, 100, color='black', linestyle='--', label='Substrat Peak Height')
-    print(file_name, invert_fit(substrat/maxHeight, param[0], param[1]), invert_fit(substrat/maxHeight, param[0], param[1]+top_diff), invert_fit(substrat/maxHeight, param[0], param[1]+bottom_diff))
+    # plt.hlines(substrat/maxHeight, 0, 100, color='black', linestyle='--', label='Substrat Peak Height')
+    center = invert_fit(substrat/maxHeight, param[0], param[1])
+    top = invert_fit(substrat/maxHeight, param[0], param[1]+top_diff)
+    bottom = invert_fit(substrat/maxHeight, param[0], param[1]+bottom_diff)
+    print(file_name, bottom, center, top)
+    color = 'magenta'
+    legend = 'Vodka'
+    if 'gin' in file_name:
+        color = 'blue'
+        legend = 'Gin'
+    elif 'whisky' in file_name:
+        color = 'green'
+        legend = 'Whisky'
+        
+    plt.hlines(substrat/maxHeight, bottom, top, color=color, linestyle='--', label=legend)
 
-plt.plot(concentrations, fits + top_diff, color='red')
-plt.plot(concentrations, fits, color='orange')
-plt.plot(concentrations, fits + bottom_diff, color='green')
-plt.scatter(concentrations, heights)
+plt.plot(concentrations, fits + top_diff, color='black', linestyle='dashed', label='_nolegend_')
+plt.plot(concentrations, fits, color=(0.12, 0.47, 0.7, 0.5), label='_nolegend_')
+plt.plot(concentrations, fits + bottom_diff, color='black', linestyle='dashed', label='_nolegend_')
+plt.xlim(34, 50)
+plt.ylim(0.22, 0.32)
+# plt.scatter(concentrations, heights)
+plt.legend()
+plt.xlabel("Pourcentage d'éthanol (%)", fontsize=15)
+plt.ylabel('Intensité (relative)', fontsize=15)
+plt.title("Intensité du spectre Raman selon le taux d'éthanol", fontsize=15)
+plt.gca().invert_xaxis()
+plt.savefig("results.png")
 plt.show()
